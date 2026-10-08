@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Misi Analisis Kesalahan: Fungsi & Range</title>
+  
+  <!-- KaTeX for beautiful math rendering -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/contrib/auto-render.min.js"></script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Google+Sans+Flex:ital,wght@0,300..700;1,300..700&family=Google+Sans+Code:ital,wght,MONO@0,300..700,0..1;1,300..700,0..1&display=swap');
+
+    :root {
+      --ff-sans: 'Google Sans Flex', sans-serif;
+      --ff-mono: 'Google Sans Code', monospace;
+      --surface: #fdfcfc;
+      --surface-dim: #f2f0f0;
+      --surface-bright: #ffffff;
+      --surface-container: #f2f0f0;
+      --surface-container-high: #e6e6e6;
+      --on-surface: #000000;
+      --on-surface-variant: rgba(0, 0, 0, 0.55);
+      --primary: #3186ff;
+      --primary-container: #dcf1ff;
+      --accent-fixed: #3186ff;
+      --positive: #008052;
+      --positive-container: #daf9d4;
+      --error: #de2d29;
+      --error-container: #ffdeec;
+      --outline: #727676;
+      --stroke-default: #e3e3e3;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: var(--ff-sans);
+      background: var(--surface);
+      color: var(--on-surface);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .widget-container {
+      width: 100%;
+      max-width: 800px;
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 24px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .header-card {
+      background: var(--surface-dim);
+      border-radius: 12px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .step-badge, .score-badge {
+      font-family: var(--ff-mono);
+      font-size: 13px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+
+    .step-badge {
+      background: var(--primary-container);
+      color: var(--accent-fixed);
+      font-weight: 600;
+    }
+
+    .score-badge {
+      background: var(--surface-bright);
+      border: 1px solid var(--stroke-default);
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 6px;
+      background: var(--surface-container-high);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .problem-box {
+      background: var(--surface-container);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .scratchpad-card {
+      background: var(--surface-bright);
+      border: 1px dashed var(--outline);
+      border-radius: 12px;
+      padding: 16px;
+      margin-block: 8px;
+    }
+
+    .scratchpad-title {
+      font-family: var(--ff-mono);
+      font-size: 13px;
+      color: var(--on-surface-variant);
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .math-text {
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .options-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .option-card {
+      background: var(--surface-bright);
+      border: 1px solid var(--stroke-default);
+      border-radius: 12px;
+      padding: 12px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .option-card:hover { background: var(--surface-container-high); }
+    .option-card.is-selected { border-color: var(--primary); background: var(--primary-container); }
+    .option-card.is-correct { border-color: var(--positive); background: var(--positive-container); }
+    .option-card.is-wrong { border-color: var(--error); background: var(--error-container); }
+
+    .option-radio {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      border: 2px solid var(--outline);
+      margin-top: 2px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+
+    .option-card.is-selected .option-radio {
+      border-color: var(--accent-fixed);
+      background: var(--accent-fixed);
+    }
+
+    .option-radio::after {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--surface-bright);
+      display: none;
+    }
+
+    .option-card.is-selected .option-radio::after { display: block; }
+
+    .explanation-card {
+      background: var(--surface-dim);
+      border-left: 4px solid var(--primary);
+      border-radius: 0 12px 12px 0;
+      padding: 12px 16px;
+      margin-top: 12px;
+      display: none;
+    }
+
+    .explanation-card.is-visible { display: block; }
+
+    .nav-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .lumi-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 40px;
+      padding: 0 20px;
+      font-family: var(--ff-sans);
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: 999px;
+      border: 1px solid var(--stroke-default);
+      background: var(--surface-bright);
+      color: var(--on-surface);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .lumi-btn:hover:not(:disabled) { background: var(--surface-container-high); }
+    .lumi-btn-primary { background: var(--primary); color: white; border-color: transparent; }
+    .lumi-btn-primary:hover:not(:disabled) { background: #1a6fe6; }
+    .lumi-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    .takeaway-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .takeaway-item { display: flex; align-items: flex-start; gap: 8px; font-size: 14px; line-height: 1.4; }
+    .takeaway-bullet { color: var(--primary); font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="widget-container">
+    <div class="header-card">
+      <div class="header-top">
+        <span id="step-badge" class="step-badge">Tahap 1 / 8</span>
+        <span id="score-badge" class="score-badge">Skor Diagnosis: 0/6</span>
+      </div>
+      <div class="progress-bar-container">
+        <div id="progress-fill" class="progress-bar-fill"></div>
+      </div>
+      <h2 id="step-title" style="margin: 4px 0 0 0; font-size: 20px;">Misi Analisis Kesalahan: Fungsi</h2>
+    </div>
+
+    <div id="content-zone">
+      <!-- Dynamic step content injected here -->
+    </div>
+
+    <div class="nav-actions">
+      <button id="btn-prev" class="lumi-btn" style="visibility: hidden;">Kembali</button>
+      <button id="btn-next" class="lumi-btn lumi-btn-primary" disabled>Mulai Diagnosis</button>
+    </div>
+  </div>
+
+  <script>
+    const MISSION_DATA = [
+      {
+        step: 1,
+        type: "intro",
+        title: "Misi Analisis Kesalahan: Sifat Fungsi",
+        content: "Halo, Siswa-siswi Kelas XII yang cerdas! Di ujian TKA, konsep Domain (Daerah Asal), Kodomain (Daerah Kawan), dan Range (Daerah Hasil) sering dijebak menggunakan fungsi rasional dan fungsi kuadrat. Mari kita asah logikamu!\n\n**Soal Utama:**\nDiberikan dua buah fungsi yang memetakan himpunan bilangan real ke bilangan real ($f: \\mathbb{R} \\rightarrow \\mathbb{R}$ dan $g: \\mathbb{R} \\rightarrow \\mathbb{R}$):\n\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$\nFungsi Kuadrat: $g(x) = x^2 - 4x + 5$\n\nTugasmu adalah mendiagnosis 6 coretan jawaban siswa fiktif dalam menentukan karakteristik grafik, domain, dan range dari kedua fungsi tersebut. Sudah siap?",
+        wrong_answer_text: "",
+        question: "",
+        options: [],
+        correct_index: 0,
+        explanation: ""
+      },
+      {
+        step: 2,
+        type: "quiz",
+        title: "Analisis Kasus 1: Coretan Budi (Domain Rasional)",
+        content: "**Reminder Soal:**\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$ dan Fungsi Kuadrat: $g(x) = x^2 - 4x + 5$",
+        wrong_answer_text: "Menentukan Domain $f(x)$:\nSyarat fungsi bentuk pecahan adalah nilai di dalam penyebut harus lebih dari atau sama dengan nol.\n$x + 3 \\geq 0 \\implies x \\geq -3$\nJadi, Domain $D_f = \\{x \\mid x \\geq -3, x \\in \\mathbb{R}\\}$",
+        question: "Budi menentukan syarat domain fungsi pecahan, namun dia tertukar dengan syarat fungsi lain. Apa kesalahannya?",
+        options: [
+          "Syarat penyebut pecahan adalah TIDAK BOLEH SAMA DENGAN nol ($x + 3 \\neq 0$), syarat $\\geq 0$ adalah untuk fungsi dalam akar.",
+          "Budi salah memindahkan ruas angka 3, seharusnya menjadi $x \\geq 3$.",
+          "Fungsi rasional selalu memiliki domain seluruh bilangan real tanpa syarat apapun."
+        ],
+        correct_index: 0,
+        explanation: "Tepat Sekali! Budi mencampuradukkan syarat akar ($f(x) = \\sqrt{x+3} \\implies x+3 \\geq 0$) dengan syarat pecahan. Pecahan akan terdefinisi selama penyebutnya bukan nol. Jadi yang benar adalah $x + 3 \\neq 0 \\implies x \\neq -3$."
+      },
+      {
+        step: 3,
+        type: "quiz",
+        title: "Analisis Kasus 2: Coretan Siti (Range Rasional)",
+        content: "**Reminder Soal:**\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$ dan Fungsi Kuadrat: $g(x) = x^2 - 4x + 5$",
+        wrong_answer_text: "Menentukan Range $f(x)$:\nKarena $f(x)$ berbentuk pecahan, maka nilai $y$ (hasilnya) bisa berupa angka berapapun asalkan tidak nol.\nJadi, Range $R_f = \\{y \\mid y \\neq 0, y \\in \\mathbb{R}\\}$",
+        question: "Siti menebak range fungsi rasional hanya dengan melihat bentuknya, padahal fungsi rasional memiliki garis asimtot datar. Di mana letak kesalahannya?",
+        options: [
+          "Range fungsi rasional selalu bernilai positif, sehingga $y > 0$.",
+          "Range fungsi $f(x)$ bergantung pada asimtot datar. Asimtot datar $y = \\frac{koefisien\\ x\\ pembilang}{koefisien\\ x\\ penyebut} = \\frac{2}{1} = 2$. Jadi $y \\neq 2$.",
+          "Range fungsi rasional dipengaruhi oleh akar pembilang, sehingga $y \\neq 2x - 4$."
+        ],
+        correct_index: 1,
+        explanation: "Jeli sekali! Fungsi rasional berbentuk $f(x) = \\frac{ax+b}{cx+d}$ memiliki batas vertikal (asimtot tegak) di $x = -\\frac{d}{c}$ dan batas horizontal (asimtot datar) di $y = \\frac{a}{c}$. Grafik tidak akan pernah menyentuh $y = 2$, sehingga Range-nya adalah $y \\neq 2$."
+      },
+      {
+        step: 4,
+        type: "quiz",
+        title: "Analisis Kasus 3: Coretan Doni (Titik Potong)",
+        content: "**Reminder Soal:**\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$ dan Fungsi Kuadrat: $g(x) = x^2 - 4x + 5$",
+        wrong_answer_text: "Mencari titik potong $f(x)$ dengan sumbu-Y:\nTitik potong sumbu-Y terjadi saat $y = 0$.\n$\\frac{2x - 4}{x + 3} = 0 \\implies 2x - 4 = 0 \\implies x = 2$.\nJadi, memotong sumbu-Y di titik $(2, 0)$.",
+        question: "Doni mencari titik potong sumbu-Y, tapi logikanya tertukar. Apa kesalahan fundamental yang dilakukan Doni?",
+        options: [
+          "Doni salah memindahkan penyebut $(x+3)$ ke ruas kanan, seharusnya dikalikan silang.",
+          "Titik $(2,0)$ adalah titik potong dengan sumbu-X (saat $y=0$). Memotong sumbu-Y seharusnya terjadi saat $x=0$.",
+          "Fungsi rasional tidak pernah memotong sumbu-Y karena terhalang oleh asimtot."
+        ],
+        correct_index: 1,
+        explanation: "Luar biasa! Ini kebingungan klasik. Memotong sumbu-Y berarti grafik berada di garis vertikal Y, yang artinya nilai koordinat $X$ pada saat itu adalah $0$. Jika $x=0$ dimasukkan, $y = \\frac{2(0)-4}{0+3} = -\\frac{4}{3}$. Jadi memotong sumbu-Y di $(0, -\\frac{4}{3})$."
+      },
+      {
+        step: 5,
+        type: "quiz",
+        title: "Analisis Kasus 4: Coretan Rina (Domain Kuadrat)",
+        content: "**Reminder Soal:**\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$ dan Fungsi Kuadrat: $g(x) = x^2 - 4x + 5$",
+        wrong_answer_text: "Menentukan Domain $g(x)$:\nKarena $g(x) = x^2 - 4x + 5$ membentuk kurva parabola yang memiliki titik puncak (sumbu simetri) di $x = -\\frac{-4}{2(1)} = 2$, maka grafiknya hanya ada di sebelah kanan angka 2.\nDomain $D_g = \\{x \\mid x \\geq 2\\}$",
+        question: "Rina mengaitkan sumbu simetri dengan domain fungsi. Mengapa pernyataan ini salah total?",
+        options: [
+          "Domain kurva parabola seharusnya dibatasi dari bawah, yaitu $x \\geq 0$.",
+          "Sumbu simetri ($x=2$) adalah titik tengah grafik, kurva parabola melebar ke kiri hingga $-\\infty$ dan ke kanan hingga $\\infty$. Domainnya adalah $x \\in \\mathbb{R}$.",
+          "Sumbu simetri Rina salah hitung, seharusnya $x = -2$, sehingga domainnya $x \\geq -2$."
+        ],
+        correct_index: 1,
+        explanation: "Pintar! Sumbu simetri $x=2$ membelah parabola, tapi tidak membatasi seberapa jauh kurva itu melebar ke kiri atau kanan. Fungsi kuadrat berjenis polinomial tidak memiliki syarat akar atau pecahan, sehingga nilai $x$ berapapun (negatif, nol, positif) sah dimasukkan. Domainnya seluruh bilangan real."
+      },
+      {
+        step: 6,
+        type: "quiz",
+        title: "Analisis Kasus 5: Coretan Anton (Range Kuadrat)",
+        content: "**Reminder Soal:**\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$ dan Fungsi Kuadrat: $g(x) = x^2 - 4x + 5$",
+        wrong_answer_text: "Menentukan Range $g(x)$:\nUntuk mencari nilai minimum, substitusi $x = 0$ ke fungsi.\n$g(0) = 0^2 - 4(0) + 5 = 5$.\nKarena parabola terbuka ke atas ($a > 0$), nilai minimumnya adalah 5. Range $R_g = \\{y \\mid y \\geq 5\\}$",
+        question: "Anton salah berasumsi bahwa nilai minimum suatu fungsi selalu terjadi ketika x = 0. Bagaimana cara yang benar untuk menemukan batas range fungsi kuadrat?",
+        options: [
+          "Nilai minimum terjadi di titik puncak parabola. Nilai $y$ puncak dicari dengan mensubstitusi sumbu simetri ($x=2$) ke dalam fungsi, menghasilkan $y = 1$.",
+          "Range fungsi kuadrat selalu sama dengan domainnya, yaitu seluruh bilangan real $\\mathbb{R}$.",
+          "Range fungsi kuadrat dicari dengan memfaktorkan persamaan dan mengambil akar-akarnya."
+        ],
+        correct_index: 0,
+        explanation: "Tepat! Kurva parabola tidak selalu mencapai dasar (minimum) saat memotong sumbu-Y ($x=0$). Minimum kurva $g(x) = x^2 - 4x + 5$ ada di titik puncaknya. Karena $x_{puncak} = 2$, maka $y_{min} = 2^2 - 4(2) + 5 = 1$. Jadi grafiknya hanya naik dari angka 1 ke atas ($y \\geq 1$)."
+      },
+      {
+        step: 7,
+        type: "quiz",
+        title: "Analisis Kasus 6: Coretan Maya (Kodomain vs Range)",
+        content: "**Reminder Soal:**\nFungsi Rasional: $f(x) = \\frac{2x - 4}{x + 3}$ dan Fungsi Kuadrat: $g(x) = x^2 - 4x + 5$",
+        wrong_answer_text: "Dari soal diketahui $g: \\mathbb{R} \\rightarrow \\mathbb{R}$. \nTanda panah menuju $\\mathbb{R}$ berarti daerah hasil atau Range dari fungsi $g(x)$ adalah seluruh himpunan bilangan real $\\mathbb{R}$.",
+        question: "Maya kebingungan membedakan istilah dalam notasi pemetaan. Jelaskan miskonsepsi fatal Maya!",
+        options: [
+          "Notasi $\\mathbb{R} \\rightarrow \\mathbb{R}$ berarti fungsi tersebut tidak memiliki Range, hanya memiliki Domain.",
+          "Himpunan $\\mathbb{R}$ di sebelah kanan panah adalah 'Kodomain' (Daerah Kawan), bukan Range. Range (Daerah Hasil, yaitu $y \\geq 1$) adalah bagian (subset) dari Kodomain.",
+          "Himpunan bilangan real $\\mathbb{R}$ tidak bisa digunakan untuk fungsi kuadrat, hanya fungsi rasional."
+        ],
+        correct_index: 1,
+        explanation: "Diagnosis Sempurna! Ini adalah soal jebakan teori HOTS. Kodomain adalah wadah himpunan yang disediakan, sedangkan Range adalah nilai yang *benar-benar tercapai* oleh fungsi. Pada fungsi $g(x)$, kita punya wadah (Kodomain) seluruh bilangan Real, tapi yang berhasil dikenai panah (Range) hanyalah angka 1 ke atas ($y \\geq 1$)."
+      },
+      {
+        step: 8,
+        type: "outro",
+        title: "Misi Sukses, Ahli Fungsi!",
+        content: "Kerja brilian! Kamu telah berhasil menaklukkan 6 jebakan paling menjebak tentang Fungsi, Domain, Range, dan Kodomain. Pemahamanmu tentang asimtot, titik puncak, hingga beda kodomain dan range sudah sangat mantap.\n\n**Tantangan Terakhir:**\nSiapkan selembar kertas, gambarlah sketsa kasar grafik fungsi kuadrat $g(x) = x^2 - 4x + 5$ dan fungsi rasional $f(x) = \\frac{2x - 4}{x + 3}$ berdasarkan titik puncak dan asimtot yang sudah kamu pelajari hari ini.\n\nTeruslah asah ketajaman logikamu untuk menghadapi TKA/UTBK!",
+        wrong_answer_text: "",
+        question: "",
+        options: [],
+        correct_index: 0,
+        explanation: ""
+      }
+    ];
+
+    const state = {
+      currentStep: 0,
+      answers: {},
+      scores: {}
+    };
+
+    function parseMarkdown(text) {
+      if (!text) return "";
+      let html = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+      html = html.replace(/\n/g, '<br>');
+      return html;
+    }
+
+    function renderProblemReminder() {
+      // Return empty if not on a quiz step, though technically handled inside renderStepContent
+      return ''; 
+    }
+
+    function renderStepContent() {
+      const data = MISSION_DATA[state.currentStep];
+      const container = document.getElementById('content-zone');
+
+      if (data.type === 'intro') {
+        container.innerHTML = `
+          <div class="math-text">${parseMarkdown(data.content)}</div>
+        `;
+      } else if (data.type === 'quiz') {
+        const chosen = state.answers[state.currentStep];
+        const isAnswered = chosen !== undefined;
+        const isCorrect = isAnswered && chosen === data.correct_index;
+
+        const optionsHTML = data.options.map((opt, idx) => {
+          let cardClass = "option-card";
+          if (isAnswered) {
+            if (idx === data.correct_index) cardClass += " is-correct";
+            else if (idx === chosen) cardClass += " is-wrong";
+          } else if (idx === chosen) {
+            cardClass += " is-selected";
+          }
+
+          return `
+            <div class="${cardClass}" onclick="selectOption(${idx})">
+              <div class="option-radio"></div>
+              <div class="math-text" style="flex: 1;">${parseMarkdown(opt)}</div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="problem-box" style="margin-bottom: 16px;">
+            <div class="math-text">${parseMarkdown(data.content)}</div>
+          </div>
+          
+          <div class="scratchpad-card">
+            <div class="scratchpad-title">Coretan Jawaban (Mengandung Kesalahan):</div>
+            <div class="math-text">${parseMarkdown(data.wrong_answer_text)}</div>
+          </div>
+
+          <p class="math-text" style="margin: 16px 0 8px 0; font-weight: 600;">${parseMarkdown(data.question)}</p>
+
+          <div class="options-group">
+            ${optionsHTML}
+          </div>
+
+          <div class="explanation-card ${isAnswered ? 'is-visible' : ''}">
+            <p class="math-text" style="margin: 0 0 4px 0; font-weight: bold; color: ${isCorrect ? 'var(--positive)' : 'var(--error)'};">
+              ${isCorrect ? 'Diagnosis Tepat!' : 'Diagnosis Kurang Tepat'}
+            </p>
+            <p class="math-text" style="margin: 0;">${parseMarkdown(data.explanation)}</p>
+          </div>
+        `;
+      } else if (data.type === 'outro') {
+        container.innerHTML = `
+          <div class="math-text">${parseMarkdown(data.content)}</div>
+        `;
+      }
+
+      if (window.renderMathInElement) {
+        renderMathInElement(container, {
+          delimiters: [
+            {left: "$$", right: "$$", display: true},
+            {left: "$", right: "$", display: false}
+          ],
+          throwOnError: false
+        });
+      }
+    }
+
+    function updateHeaderAndNav() {
+      const totalSteps = MISSION_DATA.length;
+      const currentIdx = state.currentStep;
+      const data = MISSION_DATA[currentIdx];
+
+      document.getElementById('step-badge').textContent = `Tahap ${currentIdx + 1} / ${totalSteps}`;
+      document.getElementById('step-title').textContent = data.title;
+      document.getElementById('progress-fill').style.width = `${((currentIdx + 1) / totalSteps) * 100}%`;
+
+      const totalCorrect = Object.values(state.scores).filter(Boolean).length;
+      document.getElementById('score-badge').textContent = `Skor Diagnosis: ${totalCorrect}/6`;
+
+      const btnPrev = document.getElementById('btn-prev');
+      const btnNext = document.getElementById('btn-next');
+
+      btnPrev.style.visibility = currentIdx > 0 ? 'visible' : 'hidden';
+
+      if (data.type === 'intro') {
+        btnNext.textContent = 'Mulai Diagnosis';
+        btnNext.disabled = false;
+      } else if (data.type === 'quiz') {
+        const isAnswered = state.answers[currentIdx] !== undefined;
+        btnNext.textContent = currentIdx === totalSteps - 2 ? 'Lihat Hasil Misi' : 'Kasus Selanjutnya';
+        btnNext.disabled = !isAnswered;
+      } else if (data.type === 'outro') {
+        btnNext.textContent = 'Ulangi Misi';
+        btnNext.disabled = false;
+      }
+    }
+
+    function selectOption(optIndex) {
+      const currentIdx = state.currentStep;
+      if (MISSION_DATA[currentIdx].type !== 'quiz') return;
+      if (state.answers[currentIdx] !== undefined) return; // Lock after answering
+
+      state.answers[currentIdx] = optIndex;
+      state.scores[currentIdx] = (optIndex === MISSION_DATA[currentIdx].correct_index);
+      
+      renderStepContent();
+      updateHeaderAndNav();
+    }
+
+    document.getElementById('btn-prev').addEventListener('click', () => {
+      if (state.currentStep > 0) {
+        state.currentStep--;
+        renderStepContent();
+        updateHeaderAndNav();
+      }
+    });
+
+    document.getElementById('btn-next').addEventListener('click', () => {
+      if (state.currentStep < MISSION_DATA.length - 1) {
+        state.currentStep++;
+      } else {
+        // Reset state for outro "Ulangi Misi"
+        state.currentStep = 0;
+        state.answers = {};
+        state.scores = {};
+      }
+      renderStepContent();
+      updateHeaderAndNav();
+    });
+
+    // Initialize application when DOM is ready
+    window.addEventListener('DOMContentLoaded', () => {
+      // Set initial delay to ensure KaTeX is loaded before first render
+      setTimeout(() => {
+          renderStepContent();
+          updateHeaderAndNav();
+      }, 100);
+    });
+  </script>
+</body>
+</html>
